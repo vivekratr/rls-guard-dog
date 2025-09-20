@@ -373,8 +373,10 @@ const TeacherDashboard = () => {
                               studentEnrollment={{
                                 id: enrollment.id,
                                 student_id: enrollment.student_id,
+                                class_id: enrollment.class_id || '', // Add default value for class_id
                                 progress: enrollment.progress || 0,
                                 status: enrollment.status || "active",
+                                last_activity: enrollment.last_activity || new Date().toISOString(),
                                 student_name: enrollment.student_name,
                               }}
                               onSuccess={fetchEnrollments}

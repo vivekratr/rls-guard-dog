@@ -1,5 +1,8 @@
-import { Navigate } from "react-router-dom";
+"use client";
+
+import { useRouter } from 'next/navigation';
 import { useAuth } from "@/hooks/useAuth";
+import { useEffect } from 'react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -8,6 +11,24 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   const { user, profile, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+
+      if (allowedRoles && profile && !allowedRoles.includes(profile.role)) {
+        if (profile.role === "student") {
+          router.push('/student');
+        } else if (profile.role === "teacher" || profile.role === "head_teacher") {
+          router.push('/teacher');
+        }
+      }
+    }
+  }, [user, profile, loading, allowedRoles, router]);
 
   if (loading) {
     return (
@@ -21,7 +42,7 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return null; // Will be redirected by useEffect
   }
 
   if (!profile) {
@@ -34,16 +55,20 @@ const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
     );
   }
 
-  if (allowedRoles && !allowedRoles.includes(profile.role)) {
-    // Redirect based on user role
-    if (profile.role === "student") {
-      return <Navigate to="/student" replace />;
-    } else if (profile.role === "teacher" || profile.role === "head_teacher") {
-      return <Navigate to="/teacher" replace />;
-    }
+  // Only render children if user has the right role or if no roles are specified
+  if (!allowedRoles || allowedRoles.includes(profile.role)) {
+    return <>{children}</>;
   }
 
-  return <>{children}</>;
+  // If we get here, the user doesn't have permission but we haven't redirected yet
+  // This is a fallback, the useEffect should handle the redirect
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="text-center">
+        <p className="text-muted-foreground">Redirecting...</p>
+      </div>
+    </div>
+  );
 };
 
 export default ProtectedRoute;

@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Link, useNavigate } from "react-router-dom";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 
 const Register = () => {
@@ -25,20 +28,20 @@ const Register = () => {
   );
   const [loading, setLoading] = useState(false);
   const { signUp, user, profile } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
 
   useEffect(() => {
     if (user && profile) {
       if (profile.role === "student") {
-        navigate("/student");
+        router.push("/student");
       } else if (
         profile.role === "teacher" ||
         profile.role === "head_teacher"
       ) {
-        navigate("/teacher");
+        router.push("/teacher");
       }
     }
-  }, [user, profile, navigate]);
+  }, [user, profile, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +53,11 @@ const Register = () => {
 
     setLoading(true);
 
-    const { error } = await signUp(email, password, firstName, lastName, role);
+    const { error } = await signUp(email, password, {
+      first_name: firstName,
+      last_name: lastName,
+      role: role
+    });
 
     if (!error) {
       // Show success message and redirect to login or main page
@@ -161,7 +168,7 @@ const Register = () => {
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
               Already have an account?{" "}
-              <Link to="/login" className="text-primary hover:underline">
+              <Link href="/login" className="text-primary hover:underline">
                 Sign in
               </Link>
             </p>
@@ -171,7 +178,7 @@ const Register = () => {
         {/* Back to Home */}
         <div className="text-center mt-6">
           <Link
-            to="/"
+            href="/"
             className="text-sm text-muted-foreground hover:underline"
           >
             ← Back to home

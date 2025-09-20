@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 
 // This ensures this component is only rendered on the client side
@@ -70,10 +70,10 @@ const Dashboard = () => {
               ) : (
                 <>
                   <Button variant="ghost" asChild>
-                    <Link to="/login">Login</Link>
+                    <Link href="/login">Login</Link>
                   </Button>
                   <Button asChild>
-                    <Link to="/register">Get Started</Link>
+                    <Link href="/register">Get Started</Link>
                   </Button>
                 </>
               )}
@@ -101,12 +101,12 @@ const Dashboard = () => {
             ) : (
               <>
                 <Button size="lg" asChild>
-                  <Link to="/teacher">
+                  <Link href="/teacher">
                     Teacher Dashboard <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
                 <Button variant="secondary" size="lg" asChild>
-                  <Link to="/student">
+                  <Link href="/student">
                     Student Portal <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
@@ -165,8 +165,8 @@ const Dashboard = () => {
               View and update only your own progress records with complete
               privacy protection.
             </p>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/student">Student Portal</Link>
+            <Button variant="outline" className="mt-4" asChild>
+              <Link href="/student">View Student Portal</Link>
             </Button>
           </Card>
           <Card className="p-6 border-l-4 border-l-primary">
@@ -176,8 +176,8 @@ const Dashboard = () => {
               Manage progress for students in your assigned classes with secure
               access controls.
             </p>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/teacher">Teacher Dashboard</Link>
+            <Button variant="outline" className="mt-4" asChild>
+              <Link href="/teacher">View Teacher Dashboard</Link>
             </Button>
           </Card>
           <Card className="p-6 border-l-4 border-l-warning">
@@ -188,7 +188,7 @@ const Dashboard = () => {
               controls.
             </p>
             <Button variant="outline" size="sm" asChild>
-              <Link to="/admin">Admin Panel</Link>
+              <Link href="/admin">Admin Panel</Link>
             </Button>
           </Card>
         </div>
