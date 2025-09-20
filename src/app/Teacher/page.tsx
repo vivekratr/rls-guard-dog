@@ -1,7 +1,7 @@
 "use client";
 
 import ProtectedRoute from "@/components/ProtectedRoute";
-import TeacherDashboard from "@/pages/TeacherDashboard";
+import TeacherDashboard from "@/pages-components/TeacherDashboard";
 
 export default function TeacherPage() {
   return (

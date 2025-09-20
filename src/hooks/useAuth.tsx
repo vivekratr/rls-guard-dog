@@ -1,7 +1,14 @@
+"use client";
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+// This ensures this file is only used on the client side
+if (typeof window === 'undefined') {
+  throw new Error('useAuth can only be used on the client side');
+}
 
 interface Profile {
   id: string;
