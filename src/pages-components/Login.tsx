@@ -1,11 +1,12 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link, useNavigate } from "react-router-dom";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 
 const Login = () => {
@@ -13,20 +14,20 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { signIn, user, profile } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
 
   useEffect(() => {
     if (user && profile) {
       if (profile.role === "student") {
-        navigate("/student");
+        router.push("/student");
       } else if (
         profile.role === "teacher" ||
         profile.role === "head_teacher"
       ) {
-        navigate("/teacher");
+        router.push("/teacher");
       }
     }
-  }, [user, profile, navigate]);
+  }, [user, profile, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,8 +86,8 @@ const Login = () => {
 
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
-              Don't have an account?{" "}
-              <Link to="/register" className="text-primary hover:underline">
+              Don&apos;t have an account?{" "}
+              <Link href="/register" className="text-primary hover:underline">
                 Sign up
               </Link>
             </p>
@@ -96,7 +97,7 @@ const Login = () => {
         {/* Back to Home */}
         <div className="text-center mt-6">
           <Link
-            to="/"
+            href="/"
             className="text-sm text-muted-foreground hover:underline"
           >
             ← Back to home

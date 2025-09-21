@@ -1,0 +1,18 @@
+[install]
+# Use the default package registry
+registry = "https://registry.npmjs.org"
+
+[test]
+# Test configuration
+
+[bundle]
+# Enable minification in production
+minify = true
+
+[dev]
+# Automatically restart the development server when files change
+watch = true
+
+[log]
+# Set log level (error, warn, info, debug, trace)
+level = "info"

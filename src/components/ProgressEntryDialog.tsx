@@ -39,6 +39,13 @@ interface StudentEnrollment {
 
 type EnrollmentUpdate = Partial<Pick<StudentEnrollment, 'progress' | 'status' | 'last_activity' | 'updated_at'>>;
 
+interface Student {
+  id: string;
+  user_id: string;
+  first_name: string;
+  last_name: string;
+}
+
 interface ProgressEntryDialogProps {
   studentEnrollment?: StudentEnrollment;
   classId?: string;
@@ -52,7 +59,7 @@ export const ProgressEntryDialog: React.FC<ProgressEntryDialogProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [students, setStudents] = useState<any[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState(
     studentEnrollment?.student_id || ""
   );
@@ -81,6 +88,7 @@ export const ProgressEntryDialog: React.FC<ProgressEntryDialogProps> = ({
         .eq("role", "student");
 
       if (error) throw error;
+      console.log("students",data,error)
       setStudents(data || []);
     } catch (error) {
       console.error("Error fetching students:", error);
@@ -112,11 +120,11 @@ export const ProgressEntryDialog: React.FC<ProgressEntryDialogProps> = ({
         status,
         last_activity: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      } as any;
+      };
 
       if (studentEnrollment) {
         // Update existing enrollment
-        const { error } = await (supabase as any)
+        const { error } = await (supabase)
           .from("student_enrollments")
           .update(updateData)
           .eq("id", studentEnrollment.id);
@@ -129,7 +137,7 @@ export const ProgressEntryDialog: React.FC<ProgressEntryDialogProps> = ({
         });
       } else if (classId) {
         // Create new enrollment or update existing one
-        const { error } = await (supabase as any)
+        const { error } = await (supabase )
           .from("student_enrollments")
           .upsert({
             student_id: selectedStudentId,
@@ -158,12 +166,13 @@ export const ProgressEntryDialog: React.FC<ProgressEntryDialogProps> = ({
         setStatus("active");
         setNotes("");
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error saving progress:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message || "Failed to save progress entry",
+        description:
+          (error as Error).message || "Failed to save progress entry",
       });
     } finally {
       setLoading(false);
@@ -176,6 +185,8 @@ export const ProgressEntryDialog: React.FC<ProgressEntryDialogProps> = ({
         <Button
           variant={studentEnrollment ? "ghost" : "default"}
           size={studentEnrollment ? "sm" : "default"}
+          className={studentEnrollment ? "p-2" : ""}
+          aria-label={studentEnrollment ? "Edit progress" : "Add progress entry"}
         >
           {studentEnrollment ? (
             <Edit3 className="h-4 w-4" />
@@ -189,9 +200,15 @@ export const ProgressEntryDialog: React.FC<ProgressEntryDialogProps> = ({
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-lg font-semibold">
             {studentEnrollment ? "Update Progress" : "Add Progress Entry"}
           </DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
+            {studentEnrollment 
+              ? `Update progress for ${studentEnrollment.student_name || 'this student'}`
+              : 'Add a new progress entry for the student'
+            }
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           {!studentEnrollment && (

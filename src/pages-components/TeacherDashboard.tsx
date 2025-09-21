@@ -1,38 +1,53 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from "@/hooks/useAuth";
+import Link from "next/link";
+// import { useRouter } from "next/navigation"; // Uncomment if needed for future use
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { BookOpen, Users, TrendingUp, Calendar, Eye } from "lucide-react";
-import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
 import { ProgressEntryDialog } from "@/components/ProgressEntryDialog";
+
+interface Class {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface StudentProfile {
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  email?: string;
+}
+
+interface Enrollment {
+  id: string;
+  student_id: string;
+  class_id: string;
+  progress: number;
+  status: string;
+  last_activity: string;
+  student_name: string;
+  enrolled_at: string;
+}
 
 const TeacherDashboard = () => {
   const [selectedClass, setSelectedClass] = useState("");
-  const [classes, setClasses] = useState<any[]>([]);
-  const [enrollments, setEnrollments] = useState<any[]>([]);
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
 
   const { user, profile } = useAuth();
-  const { toast } = useToast();
 
-  useEffect(() => {
-    if (user) {
-      fetchClasses();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (selectedClass) {
-      fetchEnrollments();
-    }
-  }, [selectedClass]);
-
-  const fetchClasses = async () => {
+  const fetchClasses = useCallback(async () => {
+    if (!user) return;
+    
     try {
       const { data, error } = await supabase
         .from("classes")
@@ -55,16 +70,15 @@ const TeacherDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, selectedClass]);
 
-  const fetchEnrollments = async () => {
+  const fetchEnrollments = useCallback(async () => {
     if (!selectedClass) return;
 
     try {
       const { data, error } = await supabase
         .from("student_enrollments")
-        .select(
-          `
+        .select(`
           id,
           student_id,
           class_id,
@@ -72,16 +86,15 @@ const TeacherDashboard = () => {
           status,
           last_activity,
           enrolled_at
-        `
-        )
+        `)
         .eq("class_id", selectedClass)
         .order("enrolled_at", { ascending: false });
 
       if (error) throw error;
 
-      // Fetch student details separately
+      // Fetch student details
       if (data && data.length > 0) {
-        const studentIds = data.map((enrollment) => enrollment.student_id);
+        const studentIds = data.map((enrollment: Enrollment) => enrollment.student_id);
         const { data: studentsData, error: studentsError } = await supabase
           .from("profiles")
           .select("user_id, first_name, last_name")
@@ -90,16 +103,16 @@ const TeacherDashboard = () => {
         if (studentsError) throw studentsError;
 
         // Combine the data
-        const formattedEnrollments = data.map((enrollment) => {
+        const formattedEnrollments = data.map((enrollment: Omit<Enrollment, 'student_name'>) => {
           const student = studentsData?.find(
-            (s) => s.user_id === enrollment.student_id
+            (s: StudentProfile) => s.user_id === enrollment.student_id
           );
           return {
             ...enrollment,
             student_name: student
               ? `${student.first_name} ${student.last_name}`
               : "Unknown Student",
-          };
+          } as Enrollment;
         });
 
         setEnrollments(formattedEnrollments);
@@ -114,7 +127,49 @@ const TeacherDashboard = () => {
         description: "Failed to fetch student enrollments",
       });
     }
-  };
+  }, [selectedClass]);
+
+  // Fetch classes on user load
+  useEffect(() => {
+    if (user) {
+      fetchClasses();
+    }
+  }, [user, fetchClasses]);
+
+  // Fetch enrollments when selected class changes
+  useEffect(() => {
+    if (selectedClass) {
+      fetchEnrollments();
+    }
+  }, [selectedClass, fetchEnrollments]);
+
+  // Logout handler (commented out as it's currently not used in the UI)
+  // Uncomment and use when implementing logout functionality
+  // const handleLogout = useCallback(async () => {
+  //   await signOut();
+  //   router.push('/login');
+  // }, [router, signOut]);
+
+  // Calculate stats using useMemo to prevent duplicate declarations
+  const stats = useMemo(() => {
+    const totalStudents = enrollments.length;
+    const avgProgress = enrollments.length > 0
+      ? Math.round(enrollments.reduce((sum: number, e: Enrollment) => sum + (e.progress || 0), 0) / enrollments.length)
+      : 0;
+      
+    const activeToday = enrollments.filter((e: Enrollment) => {
+      if (!e.last_activity) return false;
+      const today = new Date();
+      const activity = new Date(e.last_activity);
+      return activity.toDateString() === today.toDateString();
+    }).length;
+
+    return {
+      totalStudents,
+      avgProgress,
+      activeToday,
+    };
+  }, [enrollments]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -148,27 +203,6 @@ const TeacherDashboard = () => {
     return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
   };
 
-  const calculateStats = () => {
-    const totalStudents = enrollments.length;
-    const avgProgress =
-      totalStudents > 0
-        ? Math.round(
-            enrollments.reduce((sum, e) => sum + (e.progress || 0), 0) /
-              totalStudents
-          )
-        : 0;
-    const activeToday = enrollments.filter((e) => {
-      if (!e.last_activity) return false;
-      const today = new Date();
-      const activity = new Date(e.last_activity);
-      return activity.toDateString() === today.toDateString();
-    }).length;
-
-    return { totalStudents, avgProgress, activeToday };
-  };
-
-  const stats = calculateStats();
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -187,7 +221,7 @@ const TeacherDashboard = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link to="/" className="text-2xl font-bold text-primary">
+              <Link href="/" className="text-2xl font-bold text-primary">
                 RLS Guard Dog
               </Link>
               <Badge variant="outline">Teacher Portal</Badge>
